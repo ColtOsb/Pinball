@@ -21,7 +21,7 @@ if __name__ == "__main__":
             execution_times = {"perspective":[],
                               "circle_prep":[],
                               "circle_detect":[],
-                              "cirlce_locate":[],
+                              "circle_locate":[],
                               "flipper":[],
                               "display":[]
                               }
