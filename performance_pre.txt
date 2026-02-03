@@ -1,0 +1,8 @@
+Before any changes
+Total time spent on perspective: 20.18935574700005 over 5861 iterations. Average: 0.0034446947188193225
+Total time spent on circle_prep: 7.15874061999999 over 5861 iterations. Average: 0.0012214196587613019
+Total time spent on circle_detect: 27.878265618000036 over 5861 iterations. Average: 0.00475657150964
+Total time spent on circle_locate: 0.14513544700000003 over 5861 iterations. Average: 2.476291537280328e-05
+Total time spent on flipper: 0.8902394909999998 over 5861 iterations. Average: 0.00015189208172666777
+Total time spent on display: 2.8878515900000115 over 5861 iterations. Average: 0.0004927233560825817
+

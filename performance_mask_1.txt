@@ -1,0 +1,7 @@
+Created mask for the rectangles of defined in config.AI before passing to gray
+Total time spent on perspective: 14.07048474400005 over 4013 iterations. Average: 0.0035062259516571268
+Total time spent on circle_prep: 7.145527292999979 over 4013 iterations. Average: 0.0017805948898579566
+Total time spent on circle_detect: 16.566154018000002 over 4013 iterations. Average: 0.004128122107650138
+Total time spent on circle_locate: 0.09902069300000015 over 4013 iterations. Average: 2.4674979566409207e-05
+Total time spent on flipper: 0.7899598809999978 over 4013 iterations. Average: 0.0001968502070769992
+Total time spent on display: 2.0084727530000004 over 4013 iterations. Average: 0.0005004915905806131
