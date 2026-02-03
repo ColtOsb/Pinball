@@ -18,15 +18,31 @@ if __name__ == "__main__":
             leftActivated = 0
             rightActivated = 0
 
+            execution_times = {"perspective":[],
+                              "circle_prep":[],
+                              "circle_detect":[],
+                              "cirlce_locate":[],
+                              "flipper":[],
+                              "display":[]
+                              }
             cam = cv2.VideoCapture(0)
             perspective = Perspective()
             while True:
                 ret, frame = cam.read()
+                time_start = cv2.getTickCount()
                 frame = perspective.applyPerspectiveTransform(frame)
+                execution_times["perspective"].append((time_start,cv2.getTickCount()))
                 #frame = zoom_at(frame,1.5)
+                time_start = cv2.getTickCount()
                 gray = Circles.prep(frame)
+                execution_times["circle_prep"].append((time_start,cv2.getTickCount()))
+                time_start = cv2.getTickCount()
                 circles = Circles.detectCircles(gray)
+                execution_times["circle_detect"].append((time_start,cv2.getTickCount()))
+                time_start = cv2.getTickCount()
                 location = Circles.locateCircles(circles)
+                execution_times["circle_locate"].append((time_start,cv2.getTickCount()))
+                time_start = cv2.getTickCount()
                 if location[0] >= 0 and location [1] >= 0:
                     print(location)
                 x = location[0]
@@ -55,14 +71,24 @@ if __name__ == "__main__":
                     rightActive = False
                     rightActivated = datetime.now().timestamp()
                     print("Deactivate Right Flipper")
+
+                execution_times["flipper"].append((time_start,cv2.getTickCount()))
+                time_start = cv2.getTickCount()
                 Circles.displayCircles(circles,frame)
                 cv2.rectangle(frame,(400,28),(525,175),255,3)
                 cv2.rectangle(frame,(235,28),(360,175),255,3)
                 cv2.imshow('Machine Vision', frame)
+                execution_times["display"].append((time_start,cv2.getTickCount()))
 
                 if cv2.waitKey(1) == ord('q'):
                     break
             cam.release()
             cv2.destroyAllWindows()
+            for key,x in execution_times.items():
+                total = 0
+                for y in x:
+                    total += (y[0] - y[1]) / cv2.getTickFrequency()
+                print(f"Total time spent on {key}: {total} over {len(x)} iterations. Average: {total/len(x)}")
+                    
         finally:
             client.client.close()
