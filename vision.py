@@ -44,10 +44,12 @@ class Circles:
                 )
         return circles
 
-    def displayCircles(circles,frame):
+    def displayCircles(circles,frame,offset=(0,0)):
         if circles is not None:
             circles = np.uint16(np.around(circles))
             x, y, r = circles[0][0]
+            x += offset[0]
+            y += offset[1]
             cv2.circle(frame, (x,y),r,(0,255,0), 2)
             cv2.circle(frame, (x,y), 2, (0,0,255),3)
             print(r)

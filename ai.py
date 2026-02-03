@@ -6,6 +6,7 @@ from perspective import Perspective
 from vision import Circles
 from datetime import datetime
 from config import AI as ai_config
+from copy import copy
 
 if __name__ == "__main__":
 
@@ -21,10 +22,11 @@ if __name__ == "__main__":
             execution_times = {"perspective":[],
                               "circle_prep":[],
                               "circle_detect":[],
-                              "cirlce_locate":[],
+                              "circle_locate":[],
                               "flipper":[],
                               "display":[]
                               }
+            print(f"Tick frequency: {cv2.getTickFrequency()}")
             cam = cv2.VideoCapture(0)
             perspective = Perspective()
             while True:
@@ -34,7 +36,8 @@ if __name__ == "__main__":
                 execution_times["perspective"].append((time_start,cv2.getTickCount()))
                 #frame = zoom_at(frame,1.5)
                 time_start = cv2.getTickCount()
-                gray = Circles.prep(frame)
+                cropped_frame = frame[ai_config.y_minimum:ai_config.y_maximum, ai_config.x_right_minimum: ai_config.x_left_maximum].copy()
+                gray = Circles.prep(cropped_frame)
                 execution_times["circle_prep"].append((time_start,cv2.getTickCount()))
                 time_start = cv2.getTickCount()
                 circles = Circles.detectCircles(gray)
@@ -45,8 +48,8 @@ if __name__ == "__main__":
                 time_start = cv2.getTickCount()
                 if location[0] >= 0 and location [1] >= 0:
                     print(location)
-                x = location[0]
-                y = location[1]
+                x = location[0] + ai_config.x_right_minimum
+                y = location[1] + ai_config.y_minimum
                 if y >= ai_config.y_minimum and y < ai_config.y_maximum:
                     if x >= ai_config.x_left_minimum and x < ai_config.x_left_maximum:
                         if not leftActive and datetime.now().timestamp() > leftActivated+ai_config.flipper_cooldown:
@@ -74,7 +77,7 @@ if __name__ == "__main__":
 
                 execution_times["flipper"].append((time_start,cv2.getTickCount()))
                 time_start = cv2.getTickCount()
-                Circles.displayCircles(circles,frame)
+                Circles.displayCircles(circles,frame,offset=(ai_config.x_right_minimum,ai_config.y_minimum))
                 cv2.rectangle(frame,(400,28),(525,175),255,3)
                 cv2.rectangle(frame,(235,28),(360,175),255,3)
                 cv2.imshow('Machine Vision', frame)
@@ -87,7 +90,7 @@ if __name__ == "__main__":
             for key,x in execution_times.items():
                 total = 0
                 for y in x:
-                    total += (y[0] - y[1]) / cv2.getTickFrequency()
+                    total += (y[1] - y[0]) / cv2.getTickFrequency()
                 print(f"Total time spent on {key}: {total} over {len(x)} iterations. Average: {total/len(x)}")
                     
         finally:
