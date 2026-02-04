@@ -40,7 +40,7 @@ int CreateNewMetric(struct metric** metrics, int* num_metrics, int* max_num_metr
 }
 
 int UpdateMetric(struct metric** metrics, int* num_metrics, int* max_num_metrics, char* name, double performance){
-  if(*num_metrics <= 0){
+  if(*num_metrics < 0){
     return 1;
   }
   for(int i = 0; i < *num_metrics && (*metrics)[i].name != NULL; ++i){
@@ -68,7 +68,7 @@ int ReadFile(struct metric** metrics, int* num_metrics, int* max_num_metrics, FI
       }
       name_start = &(buffer[i]);
       name_length = colon - name_start;
-      name_start[name_length-1] = '\0';
+      name_start[name_length] = '\0';
       printf("length: %d - %s ~",name_length,name_start);
 
       // Start looking for time
@@ -114,6 +114,19 @@ int main(int argc, char* argv[]){
   }
   ReadFile(&metrics,&num_metrics,&max_num_metrics,initial);
   ReadFile(&metrics,&num_metrics,&max_num_metrics,end);
+
+  double initial_frame_time = 0;
+  double end_frame_time = 0;
+  double percent_change;
+  printf("Metrics:\n");
+  for(int i = 0; i < num_metrics; ++i){
+    percent_change = ((metrics[i].end_performance / metrics[i].initial_performance) - 1.0) * 100;
+    initial_frame_time += metrics[i].initial_performance;
+    end_frame_time += metrics[i].end_performance;
+    printf("%s: %f -> %f ~ (%f%%)\n",metrics[i].name,metrics[i].initial_performance,metrics[i].end_performance,percent_change);
+  }
+  percent_change = ((end_frame_time / initial_frame_time) - 1.0) * 100;
+  printf("Total: %f -> %f ~ (%f%%)\n",initial_frame_time,end_frame_time,percent_change);
   
   return 0;
 }
