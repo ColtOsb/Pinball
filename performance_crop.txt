@@ -1,4 +1,4 @@
-Cropped image to y_minimum:y_maximum, x_right_minimum:x_left_maximum before passing to Circles.prep
+Cropped image to y_minimum->y_maximum, x_right_minimum->x_left_maximum before passing to Circles.prep
 Total time spent on perspective: 12.257916986 over 3625 iterations. Average: 0.003381494340965517
 Total time spent on circle_prep: 1.468896308000002 over 3625 iterations. Average: 0.0004052127746206902
 Total time spent on circle_detect: 3.6192953460000084 over 3625 iterations. Average: 0.00099842630234483
