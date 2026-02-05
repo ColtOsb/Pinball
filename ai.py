@@ -83,6 +83,9 @@ if __name__ == "__main__":
                 cv2.imshow('Machine Vision', frame)
                 execution_times["display"].append((time_start,cv2.getTickCount()))
 
+                if(client.readBallDrain()):
+                    print("Ball Drained")
+
                 if cv2.waitKey(1) == ord('q'):
                     break
             cam.release()

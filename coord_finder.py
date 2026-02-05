@@ -42,13 +42,13 @@ class CoordConfig:
     def run(self):
 
         cam = cv2.VideoCapture(0)
-        perspective = Perspective()
+#        perspective = Perspective()
         print("Click on the screen to print the coordinate location. Press q to exit. You can loop as many times as you would like.")
         print(f"Coordinate {self.coords_name[self.coords_index]}: ",end="",flush=True)
         while(1):
 
             ret, self.frame = cam.read()
-            self.frame = perspective.applyPerspectiveTransform(self.frame)
+ #           self.frame = perspective.applyPerspectiveTransform(self.frame)
             #img = cv2.resize(img,None,fx=0.25,fy=0.25)
             self.displayCoords()
 

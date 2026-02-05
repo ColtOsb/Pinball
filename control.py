@@ -12,7 +12,7 @@ class PLCConnection:
     def __init__(self,ip_address="192.168.1.10",port_number=502):
         self.ip_address = ip_address
         self.port_number = port_number
-
+        self.ballDrain = None
     def activateAutoKick(self):
         self.client.write_coil(3,[True])
 
@@ -27,7 +27,20 @@ class PLCConnection:
 
     def deactivateRight(self):
         self.client.write_coil(14,False)
-
+    def readBallDrain(self):
+        ballDrain = self.client.read_input_registers(address=6,count=1)
+        if self.ballDrain is None:
+            self.ballDrain = ballDrain.registers[0]
+            
+        if self.ballDrain == ballDrain.registers[0]:
+            return False
+        else:
+            if self.ballDrain < ballDrain.registers[0]:
+                self.ballDrain = ballDrain.registers[0]
+                return True
+            else:
+                self.ballDrain = 0
+                return False
     def connectToPlc(self):
         self.client = ModbusTcpClient(self.ip_address,port=self.port_number)
         if self.client.connect():
