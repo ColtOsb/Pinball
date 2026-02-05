@@ -33,14 +33,10 @@ class PLCConnection:
             self.ballDrain = ballDrain.registers[0]
             
         if self.ballDrain == ballDrain.registers[0]:
-            return False
+            return (False,self.ballDrain)
         else:
-            if self.ballDrain < ballDrain.registers[0]:
-                self.ballDrain = ballDrain.registers[0]
-                return True
-            else:
-                self.ballDrain = 0
-                return False
+            self.ballDrain = ballDrain.registers[0]
+            return (True,self.ballDrain)
     def connectToPlc(self):
         self.client = ModbusTcpClient(self.ip_address,port=self.port_number)
         if self.client.connect():

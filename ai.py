@@ -83,8 +83,12 @@ if __name__ == "__main__":
                 cv2.imshow('Machine Vision', frame)
                 execution_times["display"].append((time_start,cv2.getTickCount()))
 
-                if(client.readBallDrain()):
-                    print("Ball Drained")
+                ball_drain = client.readBallDrain()
+                if ball_drain[0]:
+                    if ball_drain[1] > 0:
+                        print("Ball Drained")
+                    else:
+                        print("End of game")
 
                 if cv2.waitKey(1) == ord('q'):
                     break
