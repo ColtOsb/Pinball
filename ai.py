@@ -7,18 +7,28 @@ from vision import Circles
 from datetime import datetime
 from config import AI as ai_config
 from copy import copy
+import math
+import predict
+#Centimeter = 5.3 px
+
 
 if __name__ == "__main__":
-
+    model = predict.loadModel()
     client = PLCConnection()
     if(client.connectToPlc()):
         print("PLC Connected")
         try:
             leftActive = False
             rightActive = False
+            passiveState = False
             leftActivated = 0
             rightActivated = 0
-
+            drainTime = 0
+            kickCount = 0
+            gameCount = 0
+            roundEndTime = 0
+            firstKickTimer = 0
+            firstKickComplete = False
             execution_times = {"perspective":[],
                               "circle_prep":[],
                               "circle_detect":[],
@@ -29,6 +39,9 @@ if __name__ == "__main__":
             print(f"Tick frequency: {cv2.getTickFrequency()}")
             cam = cv2.VideoCapture(0)
             perspective = Perspective()
+            client.startGame()
+            gameCount += 1
+
             while True:
                 ret, frame = cam.read()
                 time_start = cv2.getTickCount()
@@ -46,6 +59,15 @@ if __name__ == "__main__":
                 location = Circles.locateCircles(circles)
                 execution_times["circle_locate"].append((time_start,cv2.getTickCount()))
                 time_start = cv2.getTickCount()
+                gray = cv2.cvtColor(gray,cv2.COLOR_GRAY2RGB)
+                gray = cv2.resize(gray,(290,135))
+                prediction = predict.prediction(gray,model)
+                if not firstKickComplete:
+                    if not firstKickTimer:
+                        firstKickTimer = datetime.now().timestamp()
+                    elif datetime.now().timestamp() >= firstKickTimer + ai_config.kickerCooldown:
+                        client.activateAutoKick()
+                        firstKickComplete = True
                 if location[0] >= 0 and location [1] >= 0:
                     print(location)
                 x = location[0] + ai_config.x_right_minimum
@@ -80,15 +102,30 @@ if __name__ == "__main__":
                 Circles.displayCircles(circles,frame,offset=(ai_config.x_right_minimum,ai_config.y_minimum))
                 cv2.rectangle(frame,(400,28),(525,175),255,3)
                 cv2.rectangle(frame,(235,28),(360,175),255,3)
-                cv2.imshow('Machine Vision', frame)
+                cv2.imshow('Machine Vision', gray)
                 execution_times["display"].append((time_start,cv2.getTickCount()))
 
                 ball_drain = client.readBallDrain()
                 if ball_drain[0]:
                     if ball_drain[1] > 0:
                         print("Ball Drained")
+                        drainTime = datetime.now().timestamp()
                     else:
-                        print("End of game")
+                        print("Game {0} of {1} Complete".format(gameCount, ai_config.numRounds))
+                        roundEndTime = datetime.now().timestamp()
+                        passiveState = True
+
+                if ball_drain[1] > 0 and datetime.now().timestamp() >= drainTime + ai_config.kickerCooldown and ball_drain[1] > kickCount:
+                    client.activateAutoKick()
+                    kickCount += 1
+                    print("Launching Ball")
+                if passiveState == True and ball_drain[1] == 0 and datetime.now().timestamp() >= roundEndTime + ai_config.roundTimer and gameCount is not ai_config.numRounds:
+                    client.startGame()
+                    kickCount = 0
+                    gameCount += 1
+                    passiveState = False
+                    firstKickTimer = 0
+                    firstKickComplete = False
 
                 if cv2.waitKey(1) == ord('q'):
                     break

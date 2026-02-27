@@ -47,7 +47,8 @@ class CoordConfig:
         print(f"Coordinate {self.coords_name[self.coords_index]}: ",end="",flush=True)
         while(1):
 
-            ret, self.frame = cam.read()
+#            ret, self.frame = cam.read()
+            self.frame = cv2.imread("/home/pi/vision/dataset/image0.jpg")
  #           self.frame = perspective.applyPerspectiveTransform(self.frame)
             #img = cv2.resize(img,None,fx=0.25,fy=0.25)
             self.displayCoords()

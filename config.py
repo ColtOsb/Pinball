@@ -22,10 +22,11 @@ class PerspectiveCalibration:
     debug = True
 
 class CircleDetection:
-    minRadius = 12
-    maxRadius = 15
+    minRadius = 10
+    maxRadius = 18
+    #130 param1 
     param1 = 130
-    param2 = 15
+    param2 = 10
 
 class AI:
     flipper_timeout = 0.5
@@ -36,3 +37,6 @@ class AI:
     x_left_maximum = 525
     x_right_minimum = 235
     x_right_maximum = 360
+    numRounds = 1 
+    kickerCooldown = 1
+    roundTimer = 1

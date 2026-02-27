@@ -7,6 +7,8 @@ from pymodbus.client import ModbusTcpClient
 # Address 13 is left flipper write, 14 is right flipper write
 # Address 3 is autokicker
 
+# Address 6 is ball drain
+
 class PLCConnection:
         
     def __init__(self,ip_address="192.168.1.10",port_number=502):
@@ -37,6 +39,15 @@ class PLCConnection:
         else:
             self.ballDrain = ballDrain.registers[0]
             return (True,self.ballDrain)
+
+    def startGame(self):
+        print("Starting game on: ",15)
+        self.client.write_coil(15,True)
+
+    def GameActive(self):
+        start = self.client.read_coils(address=4,count=1)
+        return start.bits[0]
+
     def connectToPlc(self):
         self.client = ModbusTcpClient(self.ip_address,port=self.port_number)
         if self.client.connect():
@@ -56,6 +67,8 @@ if __name__ == "__main__":
                 win.clear()
                 win.addstr("Detected Key:")
                 win.addstr(f"{key}")
+                if (key == "s"):
+                    client.startGame()
                 if(key == "KEY_LEFT" or key == "a"):
                     if not leftActive:
                         client.activateLeft()

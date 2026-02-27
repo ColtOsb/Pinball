@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from perspective import Perspective
 from config import CircleDetection as config
-
+from datetime import datetime
 
 def zoom_at(img, zoom, coord=None):
     """
@@ -25,15 +25,45 @@ def zoom_at(img, zoom, coord=None):
               ]
     
     return img
-class Circles:
-    def prep(frame):
-        #frame = zoom_at(frame,1.5)
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        return cv2.medianBlur(gray,5)
 
-    def detectCircles(gray):
+def getFPS(cam): 
+    numFrames = 120
+    start = time.time()
+
+    for i in range (0,numFrames):
+        ret, frame = cam.read()
+    end = time.time()
+    seconds = end-start
+    print("Seconds: {}".format(seconds))
+    fps = numFrames / seconds
+
+    print("FPS: {}".format(fps))
+
+    return fps
+
+
+class Circles:
+
+    def prep(frame):
+        max_value = 255
+        max_binary_value = 255
+        trackbar_type = 1 
+        trackbar_value = 'Value'
+        
+        gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+
+        threshold_type = 1
+        threshold_value = 170
+        _, dst = cv2.threshold(gray, threshold_value, max_binary_value, threshold_type )
+
+        kernel = np.ones((3,3),np.uint8)
+        img_dilated = cv2.dilate(dst,kernel,iterations=1)
+
+        return img_dilated
+
+    def detectCircles(dst):
         circles = cv2.HoughCircles(
-                gray,
+                dst,
                 cv2.HOUGH_GRADIENT,
                 dp=1,
                 minDist=20,
@@ -70,11 +100,11 @@ if __name__ == "__main__":
     while True:
         ret, frame = cam.read()
         frame = perspective.applyPerspectiveTransform(frame)
-        gray = Circles.prep(frame)
-        frame = Circles.displayCircles(Circles.detectCircles(gray),frame)
+        dst = Circles.prep(frame)
+        frame = Circles.displayCircles(Circles.detectCircles(dst),dst)
         
 
-        cv2.imshow('Detected Circle', gray)
+        cv2.imshow('Detected Circle', dst)
 
         if cv2.waitKey(1) == ord('q'):
             break
