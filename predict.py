@@ -14,12 +14,15 @@ def prediction(img,model):
     print(predictions)
     #NO ACTION
     if predictions[0][0]:
+        print("PREDICT: NO_ACTION")
         return 1
     #FLIP LEFT
     if predictions[0][1]:
+        print("PREDICT: FLIP_LEFT")
         return 2
     #FLIP RIGHT
     if predictions[0][2]:
+        print("PREDICT: FLIP_RIGHT")
         return 3
     return 0
 

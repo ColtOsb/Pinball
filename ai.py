@@ -59,9 +59,11 @@ if __name__ == "__main__":
                 location = Circles.locateCircles(circles)
                 execution_times["circle_locate"].append((time_start,cv2.getTickCount()))
                 time_start = cv2.getTickCount()
-                gray = cv2.cvtColor(gray,cv2.COLOR_GRAY2RGB)
-                gray = cv2.resize(gray,(290,135))
-                prediction = predict.prediction(gray,model)
+                img = cv2.cvtColor(gray,cv2.COLOR_GRAY2RGB)
+                img = cv2.resize(img,(290,135))
+                img = img.astype('float32') / 255.0
+                img = np.expand_dims(img,axis=0)
+                prediction = predict.prediction(img,model)
                 if not firstKickComplete:
                     if not firstKickTimer:
                         firstKickTimer = datetime.now().timestamp()
