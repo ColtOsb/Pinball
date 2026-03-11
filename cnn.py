@@ -9,7 +9,7 @@ import os
 
 
 
-image_root = '/home/pi/vision/dataset/'
+image_root = '/home/pi/pinball/dataset/'
 
 def getImagePaths(root,folder_names,extensions):
     values = []

@@ -9,6 +9,7 @@ from config import AI as ai_config
 from copy import copy
 import math
 import predict
+import VideoCapture
 #Centimeter = 5.3 px
 
 
@@ -37,13 +38,13 @@ if __name__ == "__main__":
                               "display":[]
                               }
             print(f"Tick frequency: {cv2.getTickFrequency()}")
-            cam = cv2.VideoCapture(0)
+            cam = VideoCapture.VideoCapture(0)
             perspective = Perspective()
             client.startGame()
             gameCount += 1
-
+            count = 0
             while True:
-                ret, frame = cam.read()
+                frame = cam.read()
                 time_start = cv2.getTickCount()
                 frame = perspective.applyPerspectiveTransform(frame)
                 execution_times["perspective"].append((time_start,cv2.getTickCount()))
@@ -131,7 +132,7 @@ if __name__ == "__main__":
 
                 if cv2.waitKey(1) == ord('q'):
                     break
-            cam.release()
+            #cam.release()
             cv2.destroyAllWindows()
             for key,x in execution_times.items():
                 total = 0
