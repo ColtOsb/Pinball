@@ -1,6 +1,8 @@
 import keras
+import numpy as np
 import matplotlib.pyplot as plt
 
+classes = ['no_action', 'flip_left', 'flip_right']
 def loadModel():
     model = keras.models.load_model("trained.keras")
     return model
@@ -10,8 +12,15 @@ def prediction(img,model):
 #    img_array = keras.ops.expand_dims(img_array, 0)  # Create batch axis
 
     predictions = model.predict(img)
-    score = float(keras.ops.sigmoid(predictions[0][0]))
-    print(predictions)
+    #score = float(keras.ops.sigmoid(predictions[0][0]))
+    print("Raw predictions:", predictions)
+
+    predicted_index = np.argmax(predictions[0])
+    confidence = predictions[0][predicted_index]
+
+    print(f"PREDICT: {classes[predicted_index]}({confidence:.2%})")
+    return predicted_index
+    """
     #NO ACTION
     if predictions[0][0]:
         print("PREDICT: NO_ACTION")
@@ -26,4 +35,4 @@ def prediction(img,model):
         return 3
     return 0
 
-
+    """

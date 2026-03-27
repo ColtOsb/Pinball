@@ -37,8 +37,8 @@ def load_images(image_paths,img_size):
         img_size = (img_size,img_size)
     images = []
     for path in image_paths:
-        img = cv2.imread(path)
-        img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
         img = cv2.resize(img,(img_size[0],img_size[1]))
         images.append(img)
     return np.array(images,dtype='float32')/255.0
