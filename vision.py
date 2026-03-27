@@ -58,8 +58,8 @@ class Circles:
 
         kernel = np.ones((3,3),np.uint8)
         img_dilated = cv2.dilate(dst,kernel,iterations=1)
-
-        return img_dilated
+        closing = cv2.morphologyEx(img_dilated, cv2.MORPH_CLOSE, kernel)
+        return closing
 
     def detectCircles(dst):
         circles = cv2.HoughCircles(

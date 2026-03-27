@@ -6,7 +6,7 @@ from perspective import Perspective
 from config import AI as ai_config
 
 if __name__ == "__main__":
-    path = "/home/pi/vision/dataset"
+    path = "/home/pi/pinball/manual"
     image_num = 0
     cam = cv2.VideoCapture(0)
     perspective = Perspective()

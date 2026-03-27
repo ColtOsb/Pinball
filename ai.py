@@ -54,10 +54,10 @@ if __name__ == "__main__":
                 gray = Circles.prep(cropped_frame)
                 execution_times["circle_prep"].append((time_start,cv2.getTickCount()))
                 time_start = cv2.getTickCount()
-                circles = Circles.detectCircles(gray)
+                #circles = Circles.detectCircles(gray)
                 execution_times["circle_detect"].append((time_start,cv2.getTickCount()))
                 time_start = cv2.getTickCount()
-                location = Circles.locateCircles(circles)
+                #location = Circles.locateCircles(circles)
                 execution_times["circle_locate"].append((time_start,cv2.getTickCount()))
                 time_start = cv2.getTickCount()
                 img = cv2.cvtColor(gray,cv2.COLOR_GRAY2RGB)
@@ -71,6 +71,33 @@ if __name__ == "__main__":
                     elif datetime.now().timestamp() >= firstKickTimer + ai_config.kickerCooldown:
                         client.activateAutoKick()
                         firstKickComplete = True
+                match prediction:
+                    case 2: 
+                        if not leftActive and datetime.now().timestamp() > leftActivated+ai_config.flipper_cooldown:
+                            client.activateLeft()
+                            leftActive = True
+                            leftActivated = datetime.now().timestamp()
+                            print("left flipper",leftActivated)
+                    case 3:
+                        if not rightActive and datetime.now().timestamp() > rightActivated+ai_config.flipper_cooldown:
+                            client.activateRight()
+                            rightActive = True
+                            rightActivated = datetime.now().timestamp()
+                            print("right flipper",rightActivated)
+                    case _:
+                        print('no action')
+                if leftActive and datetime.now().timestamp() >= leftActivated+ai_config.flipper_timeout:
+                    client.deactivateLeft()
+                    leftActive = False
+                    leftActivated = datetime.now().timestamp()
+                    print("Deactivate Left Flipper")
+
+                if rightActive and datetime.now().timestamp() >= rightActivated+ai_config.flipper_timeout:
+                    client.deactivateRight()
+                    rightActive = False
+                    rightActivated = datetime.now().timestamp()
+                    print("Deactivate Right Flipper")
+                """
                 if location[0] >= 0 and location [1] >= 0:
                     print(location)
                 x = location[0] + ai_config.x_right_minimum
@@ -99,10 +126,10 @@ if __name__ == "__main__":
                     rightActive = False
                     rightActivated = datetime.now().timestamp()
                     print("Deactivate Right Flipper")
-
+                """
                 execution_times["flipper"].append((time_start,cv2.getTickCount()))
                 time_start = cv2.getTickCount()
-                Circles.displayCircles(circles,frame,offset=(ai_config.x_right_minimum,ai_config.y_minimum))
+                #Circles.displayCircles(circles,frame,offset=(ai_config.x_right_minimum,ai_config.y_minimum))
                 cv2.rectangle(frame,(400,28),(525,175),255,3)
                 cv2.rectangle(frame,(235,28),(360,175),255,3)
                 cv2.imshow('Machine Vision', gray)

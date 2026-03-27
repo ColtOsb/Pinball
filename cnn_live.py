@@ -7,14 +7,14 @@ from config import AI as ai_config
 from copy import copy
 import math
 import predict
-
+import VideoCapture
 if __name__ == "__main__":
     model = predict.loadModel()
-    cam = cv2.VideoCapture(0)
+    cam = VideoCapture.VideoCapture(0)
     perspective = Perspective()
 
     while True:
-        ret, frame = cam.read()
+        frame = cam.read()
         
         frame = perspective.applyPerspectiveTransform(frame)
         cropped_frame = frame[ai_config.y_minimum:ai_config.y_maximum, ai_config.x_right_minimum: ai_config.x_left_maximum].copy()
@@ -28,5 +28,4 @@ if __name__ == "__main__":
         cv2.imshow("frame", gray) 
         if cv2.waitKey(1) == ord('q'):
             break
-    cam.release()
     cv2.destroyAllWindows()

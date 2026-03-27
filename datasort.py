@@ -22,7 +22,8 @@ def load_images_from_folder(folder):
 
 
 if __name__ == "__main__":
-    path = "/home/pi/vision/dataset/"
+    path = "/home/pi/pinball/dataset/"
+    input_path = "/home/pi/pinball/manual/"
     y_minimum = 10
     y_maximum = 92
     x_right_minimum = 38
