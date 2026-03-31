@@ -3,6 +3,7 @@ import numpy as np
 from perspective import Perspective
 from config import CircleDetection as config
 from datetime import datetime
+from copy import copy
 
 def zoom_at(img, zoom, coord=None):
     """
@@ -92,6 +93,14 @@ class Circles:
             return (x,y)
         else:
             return (-1,-1)
+
+def PreprocessFrame(frame,perspective,y_min,y_max,x_right_min,x_left_max,for_cnn=False):
+    if not for_cnn:
+        
+        frame = perspective.applyPerspectiveTransform(frame)
+        cropped_frame = frame[y_min:y_max, x_right_min:x_left_max].copy()
+        gray = Circles.prep(cropped_frame)
+        return gray
 
 
 if __name__ == "__main__":
