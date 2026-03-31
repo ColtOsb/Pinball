@@ -3,6 +3,7 @@ import os
 import time
 import keyboard
 from pymodbus.client import ModbusTcpClient
+from enum import Enum
 # Address 11 is left flipper read, 12 is right flipper read
 # Address 13 is left flipper write, 14 is right flipper write
 # Address 3 is autokicker
@@ -10,6 +11,14 @@ from pymodbus.client import ModbusTcpClient
 # Address 6 is ball drain
 
 class PLCConnection:
+
+    output_registers = Enum(
+            "output_registers",
+            [
+                ("FLIPPER_LEFT",13),
+                ("FLIPPER_RIGHT",14)
+            ]
+        )
         
     def __init__(self,ip_address="192.168.1.10",port_number=502):
         self.ip_address = ip_address

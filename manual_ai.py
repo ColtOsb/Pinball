@@ -3,16 +3,14 @@ import cv2
 import numpy as np
 from control import PLCConnection
 from perspective import Perspective
+import vision
 from vision import Circles
 from datetime import datetime
 from config import AI as ai_config
-from copy import copy
-import math
-import predict
 import VideoCapture
-#Centimeter = 5.3 px
 import json
 from enum import Enum
+import time
 
 class State(Enum):
     CRADLE_LEFT = 0
@@ -24,6 +22,61 @@ class State(Enum):
     OTHER = 6
     INACTIVE = 7
 
+
+class Flipper:
+    sides = Enum("sides",[("LEFT",1),("RIGHT",2)])
+
+    def __init__(self,side):
+        self.active = False
+        self.last_activated = 0
+        self.side = side
+
+    def Activate(self,plc_client):
+        # Does nothing if already active
+        if self.active:
+            return 1
+
+        # Determines which flipper to activate
+        if self.side == Flipper.sides.LEFT:
+            plc_client.activateLeft()
+        elif self.side == Flipper.sides.RIGHT:
+            plc_client.activateRight()
+
+        # Invalid side set
+        else:
+            return 2
+
+        # Housekeeping variables
+        self.active = True
+        self.last_activated = datetime.now().timestamp()
+        return 0
+        
+
+    def Deactivate(self,plc_client):
+        # Does nothing if not already active
+        if not self.active:
+            return 1
+
+        # Determines which flipper to activate
+        if self.side == Flipper.sides.LEFT:
+            plc_client.deactivateLeft()
+        elif self.side == Flipper.sides.RIGHT:
+            plc_client.deactivateRight()
+
+        # Invalide side set
+        else:
+            return 2
+
+        # Housekeeping variables
+        self.active = False
+        self.last_activated = 0
+        return 0
+
+    def Toggle(self,plc_client,value=None):
+        if value is not None:
+            self.Deactivate(plc_client) if self.active else self.Activate(plc_client)
+        else:
+            self.Activate(plc_client) if value else self.Deactivate(plc_client)
 
 def LoadStateBounds(filepath):
     try:
@@ -37,20 +90,22 @@ def LoadStateBounds(filepath):
     except FileNotFoundError:
         return None
 
+def HandleStateInactive(plc_client,game_stats,kicker_cooldown):
+    if game_stats["balls"] < 3:
+        time.sleep(kicker_cooldown)
+        plc_client.activateAutoKick()
+        game_stats["balls"] += 1
+        return (State.OTHER, 0)
+    return (State.INACTIVE,1)
+
 
 
 if __name__ == "__main__":
 
     # Stores the state and status of each flipper
     flippers = {
-            "left": {
-                "active": False,
-                "last_activated": 0
-                },
-            "right": {
-                "active": False,
-                "last_activated": 0
-                }
+            "left": Flipper(Flipper.sides.LEFT),
+            "right": Flipper(Flipper.sides.RIGHT),
             }
 
     # Initializes ball location state
@@ -67,137 +122,89 @@ if __name__ == "__main__":
         print("ERROR: UNABLE TO ESTABLISH CONNECTION TO PLC.",flush=True)
         exit(1)
 
+    games_to_play = 1
+    games_completed = 0
+
     # Successfully connected to PLC
     try:
 
         # Initial setup before gameplay loop
-        drainTime = 0
-        kickCount = 0
-        gameCount = 0
-        roundEndTime = 0
-        firstKickTimer = 0
-        firstKickComplete = False
-        print(f"Tick frequency: {cv2.getTickFrequency()}")
         cam = VideoCapture.VideoCapture(0)
         perspective = Perspective()
-        client.startGame()
-        gameCount += 1
-        count = 0
 
-        # Gameplay loop involving analyzing each frame
-        while True:
+        # Loop for complete games
+        while games_completed < games_to_play:
 
-            # Reads frame and performs necessary transformations
-            frame = cam.read()
-            frame = perspective.applyPerspectiveTransform(frame)
-            cropped_frame = frame[ai_config.y_minimum:ai_config.y_maximum, ai_config.x_right_minimum: ai_config.x_left_maximum].copy()
-            gray = Circles.prep(cropped_frame)
-            # Probably need to add something to get ball location as a coordinate
-            # And remove everything related to CNN
-            img = cv2.cvtColor(gray,cv2.COLOR_GRAY2RGB)
-            img = cv2.resize(img,(290,135))
-            img = img.astype('float32') / 255.0
-            img = np.expand_dims(img,axis=0)
+            # Start Game and kick ball
+            client.startGame()
+            game_stats = {
+                    "balls": 0
+                    }
+            current_game = games_completed
 
-            # Activates auto kicker
-            if not firstKickComplete:
-                if not firstKickTimer:
-                    firstKickTimer = datetime.now().timestamp()
-                elif datetime.now().timestamp() >= firstKickTimer + ai_config.kickerCooldown:
-                    client.activateAutoKick()
-                    firstKickComplete = True
+            # Gameplay loop involving analyzing each frame
+            while current_game == games_completed:
 
-            # Logic deciding what to do
-            match prediction:
-                case 2: 
-                    if not leftActive and datetime.now().timestamp() > leftActivated+ai_config.flipper_cooldown:
-                        client.activateLeft()
-                        leftActive = True
-                        leftActivated = datetime.now().timestamp()
-                        print("left flipper",leftActivated)
-                case 3:
-                    if not rightActive and datetime.now().timestamp() > rightActivated+ai_config.flipper_cooldown:
-                        client.activateRight()
-                        rightActive = True
-                        rightActivated = datetime.now().timestamp()
-                        print("right flipper",rightActivated)
-                case _:
-                    print('no action')
-            if leftActive and datetime.now().timestamp() >= leftActivated+ai_config.flipper_timeout:
-                client.deactivateLeft()
-                leftActive = False
-                leftActivated = datetime.now().timestamp()
-                print("Deactivate Left Flipper")
+                # Reads frame and performs necessary transformations
+                frame = cam.read()
+                processed_frame = vision.PreprocessFrame(frame,perspective,ai_config.y_minimum,ai_config.y_maximum,ai_config.x_right_minimum,ai_config.x_left_maximum,for_cnn=False)
+                circles = Circles.detectCircles(processed_frame)
+                display_frame = circles.displayCircles(circles,processed_frame)
 
-            if rightActive and datetime.now().timestamp() >= rightActivated+ai_config.flipper_timeout:
-                client.deactivateRight()
-                rightActive = False
-                rightActivated = datetime.now().timestamp()
-                print("Deactivate Right Flipper")
-            """
-            if location[0] >= 0 and location [1] >= 0:
-                print(location)
-            x = location[0] + ai_config.x_right_minimum
-            y = location[1] + ai_config.y_minimum
-            if y >= ai_config.y_minimum and y < ai_config.y_maximum:
-                if x >= ai_config.x_left_minimum and x < ai_config.x_left_maximum:
-                    if not leftActive and datetime.now().timestamp() > leftActivated+ai_config.flipper_cooldown:
-                        client.activateLeft()
-                        leftActive = True
-                        leftActivated = datetime.now().timestamp()
-                        print("left flipper",leftActivated)
-                if x >= ai_config.x_right_minimum and x < ai_config.x_right_maximum:
-                    if not rightActive and datetime.now().timestamp() > rightActivated+ai_config.flipper_cooldown:
-                        client.activateRight()
-                        rightActive = True
-                        rightActivated = datetime.now().timestamp()
-                        print("right flipper",rightActivated)
-            if leftActive and datetime.now().timestamp() >= leftActivated+ai_config.flipper_timeout:
-                client.deactivateLeft()
-                leftActive = False
-                leftActivated = datetime.now().timestamp()
-                print("Deactivate Left Flipper")
+                # Gets coordinate of ball
+                ball_location = Circles.locateCircles(circles)
 
-            if rightActive and datetime.now().timestamp() >= rightActivated+ai_config.flipper_timeout:
-                client.deactivateRight()
-                rightActive = False
-                rightActivated = datetime.now().timestamp()
-                print("Deactivate Right Flipper")
-            """
-            #Circles.displayCircles(circles,frame,offset=(ai_config.x_right_minimum,ai_config.y_minimum))
-            cv2.rectangle(frame,(400,28),(525,175),255,3)
-            cv2.rectangle(frame,(235,28),(360,175),255,3)
-            cv2.imshow('Machine Vision', gray)
-            ball_drain = client.readBallDrain()
-            if ball_drain[0]:
-                if ball_drain[1] > 0:
-                    print("Ball Drained")
-                    drainTime = datetime.now().timestamp()
-                else:
-                    print("Game {0} of {1} Complete".format(gameCount, ai_config.numRounds))
-                    roundEndTime = datetime.now().timestamp()
-                    passiveState = True
 
-            if ball_drain[1] > 0 and datetime.now().timestamp() >= drainTime + ai_config.kickerCooldown and ball_drain[1] > kickCount:
-                client.activateAutoKick()
-                kickCount += 1
-                print("Launching Ball")
-            if passiveState == True and ball_drain[1] == 0 and datetime.now().timestamp() >= roundEndTime + ai_config.roundTimer and gameCount is not ai_config.numRounds:
-                client.startGame()
-                kickCount = 0
-                gameCount += 1
-                passiveState = False
-                firstKickTimer = 0
-                firstKickComplete = False
+                # Logic deciding what to do
+                match current_state:
+                    case State.CRADLE_LEFT:
+                        pass
+                    case State.Cradle_RIGHT:
+                        pass
+                    case State.Drain_CENTER:
+                        pass
+                    case State.DRAIN_LEFT:
+                        pass
+                    case State.DRAIN_RIGHT:
+                        pass
+                    case State.OTHER:
+                        pass
+                    case State.NEARBY:
+                        pass
 
-            if cv2.waitKey(1) == ord('q'):
-                break
-        #cam.release()
-        cv2.destroyAllWindows()
-        for key,x in execution_times.items():
-            total = 0
-            for y in x:
-                total += (y[1] - y[0]) / cv2.getTickFrequency()
-                
+                    # No ball in play
+                    case State.Inactive:
+                        current_state, status = HandleStateInactive(client,game_stats,ai_config.kickerCooldown)
+
+                        # Max number of balls for game have been dispensed
+                        if status:
+                            games_completed += 1
+                            continue
+                    case _:
+                        raise ValueError(f"INVALID STATE: {current_state}")
+
+                cv2.imshow('Machine Vision', display_frame)
+
+                # Check if a ball was drained
+                ball_drained, balls_left = client.readBallDrain()
+                if ball_drained:
+
+                    # More than 0 balls left in game
+                    if balls_left > 0:
+                        current_state = State.INACTIVE
+                        print("Ball Drained")
+
+                    # No balls left in game
+                    else:
+                        games_completed += 1
+                        current_state = State.INACTIVE
+                        print(f"End of game {games_completed} out of {games_to_play}.")
+
+
+                if cv2.waitKey(1) == ord('q'):
+                    break
+            #cam.release()
+            cv2.destroyAllWindows()
+                            
     finally:
         client.client.close()
