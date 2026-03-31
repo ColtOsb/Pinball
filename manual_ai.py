@@ -124,9 +124,6 @@ if __name__ == "__main__":
 
     games_to_play = 1
     games_completed = 0
-    game_stats = {
-            "balls": 0
-            }
 
     # Successfully connected to PLC
     try:
@@ -140,9 +137,13 @@ if __name__ == "__main__":
 
             # Start Game and kick ball
             client.startGame()
+            game_stats = {
+                    "balls": 0
+                    }
+            current_game = games_completed
 
             # Gameplay loop involving analyzing each frame
-            while True:
+            while current_game == games_completed:
 
                 # Reads frame and performs necessary transformations
                 frame = cam.read()
@@ -178,43 +179,32 @@ if __name__ == "__main__":
                         # Max number of balls for game have been dispensed
                         if status:
                             games_completed += 1
+                            continue
                     case _:
                         raise ValueError(f"INVALID STATE: {current_state}")
 
-                #Circles.displayCircles(circles,frame,offset=(ai_config.x_right_minimum,ai_config.y_minimum))
-                cv2.rectangle(frame,(400,28),(525,175),255,3)
-                cv2.rectangle(frame,(235,28),(360,175),255,3)
-                cv2.imshow('Machine Vision', gray)
-                ball_drain = client.readBallDrain()
-                if ball_drain[0]:
-                    if ball_drain[1] > 0:
-                        print("Ball Drained")
-                        drainTime = datetime.now().timestamp()
-                    else:
-                        print("Game {0} of {1} Complete".format(gameCount, ai_config.numRounds))
-                        roundEndTime = datetime.now().timestamp()
-                        passiveState = True
+                cv2.imshow('Machine Vision', display_frame)
 
-                if ball_drain[1] > 0 and datetime.now().timestamp() >= drainTime + ai_config.kickerCooldown and ball_drain[1] > kickCount:
-                    client.activateAutoKick()
-                    kickCount += 1
-                    print("Launching Ball")
-                if passiveState == True and ball_drain[1] == 0 and datetime.now().timestamp() >= roundEndTime + ai_config.roundTimer and gameCount is not ai_config.numRounds:
-                    client.startGame()
-                    kickCount = 0
-                    gameCount += 1
-                    passiveState = False
-                    firstKickTimer = 0
-                    firstKickComplete = False
+                # Check if a ball was drained
+                ball_drained, balls_left = client.readBallDrain()
+                if ball_drained:
+
+                    # More than 0 balls left in game
+                    if balls_left > 0:
+                        current_state = State.INACTIVE
+                        print("Ball Drained")
+
+                    # No balls left in game
+                    else:
+                        games_completed += 1
+                        current_state = State.INACTIVE
+                        print(f"End of game {games_completed} out of {games_to_play}.")
+
 
                 if cv2.waitKey(1) == ord('q'):
                     break
             #cam.release()
             cv2.destroyAllWindows()
-            for key,x in execution_times.items():
-                total = 0
-                for y in x:
-                    total += (y[1] - y[0]) / cv2.getTickFrequency()
                             
     finally:
         client.client.close()
