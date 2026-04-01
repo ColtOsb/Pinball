@@ -54,7 +54,7 @@ class Circles:
         gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
 
         threshold_type = 1
-        threshold_value = 170
+        threshold_value = 160
         _, dst = cv2.threshold(gray, threshold_value, max_binary_value, threshold_type )
 
         kernel = np.ones((3,3),np.uint8)
