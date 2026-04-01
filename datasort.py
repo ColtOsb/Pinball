@@ -22,7 +22,7 @@ def load_images_from_folder(folder):
 
 
 if __name__ == "__main__":
-    path = "/home/pi/pinball/dataset/"
+    path = "/home/pi/pinball/dataset"
     input_path = "/home/pi/pinball/manual/"
     y_minimum = 10
     y_maximum = 92
@@ -30,9 +30,7 @@ if __name__ == "__main__":
     x_right_maximum = 137
     x_left_minimum = 175
     x_left_maximum = 267
-    for filename, img in load_images_from_folder(path):
-        cv2.imshow("image",img)
-        cv2.waitKey(5)
+    for filename, img in load_images_from_folder(input_path):
         if img is not None:
             circles = Circles.detectCircles(img)
             location = Circles.locateCircles(circles)
@@ -40,12 +38,12 @@ if __name__ == "__main__":
             y = location[1]
             if y >= y_minimum and y < y_maximum:
                 if x >= x_right_minimum and x < x_right_maximum:
-                    subprocess.call("mv {}/{} {}/flip_right".format(path,filename,path),shell=True)
+                    subprocess.call("mv {}/{} {}/flip_right".format(input_path,filename,path),shell=True)
                 elif x >= x_left_minimum and x < x_left_maximum:
-                    subprocess.call("mv {}/{} {}/flip_left".format(path,filename,path),shell=True)
+                    subprocess.call("mv {}/{} {}/flip_left".format(input_path,filename,path),shell=True)
                 else:
-                    subprocess.call("mv {}/{} {}/no_action".format(path,filename,path),shell=True)
+                    subprocess.call("mv {}/{} {}/no_action".format(input_path,filename,path),shell=True)
             else:
-                subprocess.call("mv {}/{} {}/no_action".format(path,filename,path),shell=True)
+                subprocess.call("mv {}/{} {}/no_action".format(input_path,filename,path),shell=True)
     print("Files Sorted")
         

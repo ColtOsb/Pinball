@@ -1,7 +1,6 @@
 import curses
 import os
 import time
-import keyboard
 from pymodbus.client import ModbusTcpClient
 from enum import Enum
 # Address 11 is left flipper read, 12 is right flipper read

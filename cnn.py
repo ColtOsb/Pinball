@@ -39,7 +39,8 @@ def load_images(image_paths,img_size):
     for path in image_paths:
         img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
         img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
-        img = cv2.resize(img,(img_size[0],img_size[1]))
+        #Flipped img_size arguments. Fix if fucked
+        img = cv2.resize(img,(img_size[1],img_size[0]))
         images.append(img)
     return np.array(images,dtype='float32')/255.0
 
@@ -101,7 +102,8 @@ from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 states["model"] = keras.models.Sequential()
 
 #First Layer
-states["model"].add(Conv2D(32,(3,3),activation='relu',input_shape=(img_size[0],img_size[1],3)))
+#FLIPPED IMAGE SIZE ARGUMENTS. FLIP IF FUCKED
+states["model"].add(Conv2D(32,(3,3),activation='relu',input_shape=(img_size[1],img_size[0],3)))
 states["model"].add(MaxPooling2D((2,2)))
 #Second Layer
 states["model"].add(Conv2D(64,(3,3),activation='relu'))
@@ -121,7 +123,7 @@ states["history"] = states["model"].fit(
         states["X_train"],
         states["y_train"],
         batch_size=16,
-        epochs=1,
+        epochs=5,
         validation_data=(states["X_val"],states["y_val"])
     )
     

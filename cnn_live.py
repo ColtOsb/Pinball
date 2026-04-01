@@ -19,7 +19,7 @@ if __name__ == "__main__":
 #        frame = perspective.applyPerspectiveTransform(frame)
 #        cropped_frame = frame[ai_config.y_minimum:ai_config.y_maximum, ai_config.x_right_minimum: ai_config.x_left_maximum].copy()
 
-        original_img = cv2.imread('/home/pi/pinball/dataset/no_action/image5.jpg')
+        original_img = cv2.imread('/home/pi/pinball/dataset/no_action/image18.jpg')
         img = Circles.prep(original_img)
 #        circles = Circles.detectCircles(gray)
         img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)

@@ -10,6 +10,7 @@ from copy import copy
 import math
 import predict
 import VideoCapture
+import keras
 #Centimeter = 5.3 px
 
 

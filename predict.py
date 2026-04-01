@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 classes = ['no_action', 'flip_left', 'flip_right']
 def loadModel():
-    model = keras.models.load_model("trained.keras")
+    model = keras.models.load_model("cnn2.keras")
     return model
 
 def prediction(img,model):
@@ -36,3 +36,12 @@ def prediction(img,model):
     return 0
 
     """
+
+if __name__ == "__main__":
+    model = loadModel()
+    test_image = "/dataset/no_action/image0.jpg"
+    
+    img = test_image
+    prediction = prediction(img,model)
+    score = float(keras.ops.sigmoid(prediction[0][0]))
+    print(f"This image is {100 * (1 - score):.2f}% cat and {100 * score:.2f}% dog.")
