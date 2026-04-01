@@ -10,24 +10,19 @@ import predict
 import VideoCapture
 if __name__ == "__main__":
     model = predict.loadModel()
-#    cam = VideoCapture.VideoCapture(0)
-#    perspective = Perspective()
 
     while True:
-#        frame = cam.read()
-        
-#        frame = perspective.applyPerspectiveTransform(frame)
-#        cropped_frame = frame[ai_config.y_minimum:ai_config.y_maximum, ai_config.x_right_minimum: ai_config.x_left_maximum].copy()
+        original_img = cv2.imread('/home/pi/pinball/dataset/no_action/imageF0.jpg')
 
-        original_img = cv2.imread('/home/pi/pinball/dataset/no_action/image18.jpg')
-        img = Circles.prep(original_img)
-#        circles = Circles.detectCircles(gray)
+        cropped_img = original_img[ai_config.y_minimum:ai_config.y_maximum, ai_config.x_right_minimum: ai_config.x_left_maximum].copy()
+        img = Circles.prep(cropped_img)
         img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
         img = cv2.resize(img,(290,135))
         img = img.astype('float32') / 255.0
         img = np.expand_dims(img,axis=0) 
-        prediction = predict.prediction(img,model)
-
+        predicted_index = predict.prediction(img,model)
+        label = predict.classes[predicted_index]
+        print(f"Prediction: {label}")
         cv2.imshow("frame", original_img) 
         if cv2.waitKey(1) == ord('q'):
             break
