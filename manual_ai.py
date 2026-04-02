@@ -11,6 +11,7 @@ import VideoCapture
 import json
 from enum import Enum
 import time
+import polygon
 
 class State(Enum):
     CRADLE_LEFT = 0
@@ -79,17 +80,50 @@ class Flipper:
         else:
             self.Activate(plc_client) if value else self.Deactivate(plc_client)
 
+def CreateStateBoundShapes(data):
+    for i in data.keys():
+        state = data[i]
+        for zone in [x for x in state.keys() if "zone" in x]:
+            points = [polygon.Point(x[0],x[1]) for x in state[zone]]
+            for p in points:
+                print(p,end=",")
+            print("")
+            poly = polygon.Polygon(points)
+            print(poly)
+            data[i][zone] = poly
+    return data
+
 def LoadStateBounds(filepath):
     try:
         with open(filepath, 'r') as file:
             data = json.load(file)
         try:
-            data = data[0]["states"]
+            data = data[0]
+            print(data)
+            data = CreateStateBoundShapes(data)
             return data
         except (IndexError, KeyError):
             return None
     except FileNotFoundError:
         return None
+
+def HandleStateCradleLeft(plc_client, flippers, ball_location, state_bounds):
+    flippers["left"].Activate(plc_client)
+    if ball_location:
+        if state_bounds["CRADLE_LEFT"]["holding_zone"].DoesPointIntersect(x=ball_location[0],y=ball_location[1]):
+            print ("BALL IN HOLDING ZONE")
+            flippers["left"].Deactivate(plc_client)
+            return (State.OTHER,0)
+    return (State.CRADLE_LEFT,0)
+
+
+def HandleStateOther(plc_client, ball_location, state_bounds):
+    if ball_location:
+        # Check if should enter CRADLE_LEFT state
+        if state_bounds["CRADLE_LEFT"]["entry_channel_zone"].DoesPointIntersect(x=ball_location[0],y=ball_location[1]):
+            print ("ENTER CRADLE LEFT")
+            return (State.CRADLE_LEFT,0)
+    return (State.OTHER,0)
 
 def HandleStateInactive(plc_client,game_stats,kicker_cooldown):
     if game_stats["balls"] < 3:
@@ -114,6 +148,7 @@ if __name__ == "__main__":
     current_state = State.INACTIVE
     state_bounds_filepath = "states.json"
     state_bounds = LoadStateBounds(state_bounds_filepath)
+    #exit(0)
     if not state_bounds:
         print(f"ERROR: INVALID STATE BOUNDS JSON FILE OR INCORRECT PATH ({state_bounds_filepath}).",flush=True)
         exit(1)
@@ -166,7 +201,7 @@ if __name__ == "__main__":
                 # Logic deciding what to do
                 match current_state:
                     case State.CRADLE_LEFT:
-                        pass
+                        current_state, status = HandleStateCradleLeft(client, flippers, ball_location, state_bounds)
                     case State.CRADLE_RIGHT:
                         pass
                     case State.DRAIN_CENTER:
@@ -176,7 +211,7 @@ if __name__ == "__main__":
                     case State.DRAIN_RIGHT:
                         pass
                     case State.OTHER:
-                        pass
+                        current_state, status = HandleStateOther(client,ball_location, state_bounds)
                     case State.NEARBY:
                         pass
 
