@@ -49,7 +49,7 @@ class PLCConnection:
             return (True,self.ballDrain)
 
     def startGame(self):
-        print("Starting game on: ",15)
+        #print("Starting game on: ",15)
         self.client.write_coil(15,True)
 
     def GameActive(self):

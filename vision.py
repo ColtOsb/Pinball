@@ -83,7 +83,7 @@ class Circles:
             y += offset[1]
             cv2.circle(frame, (x,y),r,(0,255,0), 2)
             cv2.circle(frame, (x,y), 2, (0,0,255),3)
-            print(r)
+            #print(r)
         return frame
 
     def locateCircles(circles):
