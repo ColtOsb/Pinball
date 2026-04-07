@@ -63,9 +63,9 @@ if __name__ == "__main__":
                 time_start = cv2.getTickCount()
                 img = cv2.cvtColor(gray,cv2.COLOR_GRAY2RGB)
                 img = cv2.resize(img,(290,135))
-                img = img.astype('float32') / 255.0
+                img = img.astype('float32')
                 img = np.expand_dims(img,axis=0)
-                prediction = predict.prediction(img,model)
+                prediction, label, confidence = predict.prediction(img,model)
                 if not firstKickComplete:
                     if not firstKickTimer:
                         firstKickTimer = datetime.now().timestamp()
@@ -73,18 +73,18 @@ if __name__ == "__main__":
                         client.activateAutoKick()
                         firstKickComplete = True
                 match prediction:
-                    case 2: 
+                    case 0: 
                         if not leftActive and datetime.now().timestamp() > leftActivated+ai_config.flipper_cooldown:
                             client.activateLeft()
                             leftActive = True
                             leftActivated = datetime.now().timestamp()
-                            print("left flipper",leftActivated)
-                    case 3:
+                            print("AI.PY::left flipper",leftActivated)
+                    case 1:
                         if not rightActive and datetime.now().timestamp() > rightActivated+ai_config.flipper_cooldown:
                             client.activateRight()
                             rightActive = True
                             rightActivated = datetime.now().timestamp()
-                            print("right flipper",rightActivated)
+                            print("AI.PY::right flipper",rightActivated)
                     case _:
                         print('no action')
                 if leftActive and datetime.now().timestamp() >= leftActivated+ai_config.flipper_timeout:

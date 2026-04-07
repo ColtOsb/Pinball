@@ -33,9 +33,15 @@ for images, _ in train_ds.take(1):
         plt.imshow(np.array(augmented_images[0]).astype("uint8"))
         plt.axis("off")
 
+
+data_augmentation = keras.Sequential([
+    layers.RandomZoom(0.05),
+    layers.GaussianNoise(0.01)
+    ])
+
 def make_model(input_shape, num_classes):
     inputs = keras.Input(shape=input_shape)
-
+    #x = data_augmentation(inputs)
     # Entry block
     x = layers.Rescaling(1.0 / 255)(inputs)
     x = layers.Conv2D(128, 3, strides=2, padding="same")(x)
@@ -43,8 +49,8 @@ def make_model(input_shape, num_classes):
     x = layers.Activation("relu")(x)
 
     previous_block_activation = x  # Set aside residual
-
-    for size in [256, 512, 728]:
+    #was 256, 512, 728
+    for size in [32, 64, 128]:
         x = layers.Activation("relu")(x)
         x = layers.SeparableConv2D(size, 3, padding="same")(x)
         x = layers.BatchNormalization()(x)
@@ -88,8 +94,8 @@ callbacks = [
 ]
 model.compile(
     optimizer=keras.optimizers.Adam(3e-4),
-    #loss=keras.losses.BinaryCrossentropy(from_logits=True),
-    loss='sparse_categorical_crossentropy',
+    #loss='sparse_categorical_crossentropy',
+    loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
     #metrics=[keras.metrics.BinaryAccuracy(name="acc")],
     metrics=['accuracy']
 )
