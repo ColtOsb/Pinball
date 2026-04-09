@@ -12,161 +12,117 @@ import predict
 import VideoCapture
 import keras
 #Centimeter = 5.3 px
+from enum import Enum
+from flipper import Flipper
+import time
+
+class State(Enum):
+    KILL = 0
+    INACTIVE = 1
+    OUT_OF_PLAY = 2
+    IN_PLAY = 3
+
+
+def UseFlipperLogic(flipper: Flipper, enable_output: bool = False):
+    if not flipper.active and datetime.now().timestamp() > flipper.last_modified + ai_config.flipper_cooldown:
+        flipper.Activate(client)
+    if enable_output:
+        print(flipper)
 
 
 if __name__ == "__main__":
     model = predict.loadModel()
     client = PLCConnection()
-    if(client.connectToPlc()):
-        print("PLC Connected")
-        try:
-            leftActive = False
-            rightActive = False
-            passiveState = False
-            leftActivated = 0
-            rightActivated = 0
-            drainTime = 0
-            kickCount = 0
-            gameCount = 0
-            roundEndTime = 0
-            firstKickTimer = 0
-            firstKickComplete = False
-            execution_times = {"perspective":[],
-                              "circle_prep":[],
-                              "circle_detect":[],
-                              "circle_locate":[],
-                              "flipper":[],
-                              "display":[]
-                              }
-            print(f"Tick frequency: {cv2.getTickFrequency()}")
-            cam = VideoCapture.VideoCapture(0)
-            perspective = Perspective()
+    current_state = State.OUT_OF_PLAY
+
+    if not client.connectToPlc():
+        print("ERROR: UNABLE TO ESTABLISH CONNECTION TO PLC.",flush=True)
+        exit(1)
+
+    games_to_play = ai_config.numRounds
+    games_completed = 0
+    flippers = {
+        "left": Flipper(Flipper.sides.LEFT),
+        "right": Flipper(Flipper.sides.RIGHT),
+    }
+
+    try:
+        cam = VideoCapture.VideoCapture(0)
+        perspective = Perspective()
+        while games_completed < games_to_play:
+            if current_state == State.KILL:
+                break
+            # Start Game and kick ball
+            print("Starting game")
             client.startGame()
-            gameCount += 1
-            count = 0
-            while True:
+            current_state = State.INACTIVE
+            current_game = games_completed
+            print(f"current game {current_game}. Completed {games_completed}")
+
+            # Gameplay loop involving analyzing each frame
+            while current_game == games_completed:
+                if current_state == State.INACTIVE:
+                    time.sleep(3)
+                    client.activateAutoKick()
+                    current_state = State.IN_PLAY
                 frame = cam.read()
-                time_start = cv2.getTickCount()
                 frame = perspective.applyPerspectiveTransform(frame)
-                execution_times["perspective"].append((time_start,cv2.getTickCount()))
-                #frame = zoom_at(frame,1.5)
-                time_start = cv2.getTickCount()
                 cropped_frame = frame[ai_config.y_minimum:ai_config.y_maximum, ai_config.x_right_minimum: ai_config.x_left_maximum].copy()
                 gray = Circles.prep(cropped_frame)
-                execution_times["circle_prep"].append((time_start,cv2.getTickCount()))
-                time_start = cv2.getTickCount()
-                #circles = Circles.detectCircles(gray)
-                execution_times["circle_detect"].append((time_start,cv2.getTickCount()))
-                time_start = cv2.getTickCount()
-                #location = Circles.locateCircles(circles)
-                execution_times["circle_locate"].append((time_start,cv2.getTickCount()))
-                time_start = cv2.getTickCount()
                 img = cv2.cvtColor(gray,cv2.COLOR_GRAY2RGB)
                 img = cv2.resize(img,(290,135))
                 img = img.astype('float32')
                 img = np.expand_dims(img,axis=0)
                 prediction, label, confidence = predict.prediction(img,model)
-                if not firstKickComplete:
-                    if not firstKickTimer:
-                        firstKickTimer = datetime.now().timestamp()
-                    elif datetime.now().timestamp() >= firstKickTimer + ai_config.kickerCooldown:
-                        client.activateAutoKick()
-                        firstKickComplete = True
+
+
+                # Controls flippers
                 match prediction:
                     case 0: 
-                        if not leftActive and datetime.now().timestamp() > leftActivated+ai_config.flipper_cooldown:
-                            client.activateLeft()
-                            leftActive = True
-                            leftActivated = datetime.now().timestamp()
-                            print("AI.PY::left flipper",leftActivated)
+                        UseFlipperLogic(flippers["left"],True)
+                        #if not flippers["left"].active and datetime.now().timestamp() > flippers["left"].last_modified+ai_config.flipper_cooldown:
+                            #flippers["left"].Activate(client)
                     case 1:
-                        if not rightActive and datetime.now().timestamp() > rightActivated+ai_config.flipper_cooldown:
-                            client.activateRight()
-                            rightActive = True
-                            rightActivated = datetime.now().timestamp()
-                            print("AI.PY::right flipper",rightActivated)
+                        UseFlipperLogic(flippers["right"],True)
+                        #if not flippers["right"].active and datetime.now().timestamp() > flippers["right"].last_modified+ai_config.flipper_cooldown:
+                            #flippers["right"].Activate(client)
                     case _:
                         print('no action')
-                if leftActive and datetime.now().timestamp() >= leftActivated+ai_config.flipper_timeout:
-                    client.deactivateLeft()
-                    leftActive = False
-                    leftActivated = datetime.now().timestamp()
-                    print("Deactivate Left Flipper")
 
-                if rightActive and datetime.now().timestamp() >= rightActivated+ai_config.flipper_timeout:
-                    client.deactivateRight()
-                    rightActive = False
-                    rightActivated = datetime.now().timestamp()
-                    print("Deactivate Right Flipper")
-                """
-                if location[0] >= 0 and location [1] >= 0:
-                    print(location)
-                x = location[0] + ai_config.x_right_minimum
-                y = location[1] + ai_config.y_minimum
-                if y >= ai_config.y_minimum and y < ai_config.y_maximum:
-                    if x >= ai_config.x_left_minimum and x < ai_config.x_left_maximum:
-                        if not leftActive and datetime.now().timestamp() > leftActivated+ai_config.flipper_cooldown:
-                            client.activateLeft()
-                            leftActive = True
-                            leftActivated = datetime.now().timestamp()
-                            print("left flipper",leftActivated)
-                    if x >= ai_config.x_right_minimum and x < ai_config.x_right_maximum:
-                        if not rightActive and datetime.now().timestamp() > rightActivated+ai_config.flipper_cooldown:
-                            client.activateRight()
-                            rightActive = True
-                            rightActivated = datetime.now().timestamp()
-                            print("right flipper",rightActivated)
-                if leftActive and datetime.now().timestamp() >= leftActivated+ai_config.flipper_timeout:
-                    client.deactivateLeft()
-                    leftActive = False
-                    leftActivated = datetime.now().timestamp()
-                    print("Deactivate Left Flipper")
+                # Deactivates flippers as necessary
+                if flippers["left"].active and datetime.now().timestamp() >= flippers["left"].last_modified+ai_config.flipper_timeout:
+                    flippers["left"].Deactivate(client)
 
-                if rightActive and datetime.now().timestamp() >= rightActivated+ai_config.flipper_timeout:
-                    client.deactivateRight()
-                    rightActive = False
-                    rightActivated = datetime.now().timestamp()
-                    print("Deactivate Right Flipper")
-                """
-                execution_times["flipper"].append((time_start,cv2.getTickCount()))
-                time_start = cv2.getTickCount()
-                #Circles.displayCircles(circles,frame,offset=(ai_config.x_right_minimum,ai_config.y_minimum))
+                if flippers["right"].active and datetime.now().timestamp() >= flippers["right"].last_modified+ai_config.flipper_timeout:
+                    flippers["right"].Deactivate(client)
+
                 cv2.rectangle(frame,(400,28),(525,175),255,3)
                 cv2.rectangle(frame,(235,28),(360,175),255,3)
                 cv2.imshow('Machine Vision', gray)
-                execution_times["display"].append((time_start,cv2.getTickCount()))
 
-                ball_drain = client.readBallDrain()
-                if ball_drain[0]:
-                    if ball_drain[1] > 0:
-                        print("Ball Drained")
-                        drainTime = datetime.now().timestamp()
-                    else:
-                        print("Game {0} of {1} Complete".format(gameCount, ai_config.numRounds))
-                        roundEndTime = datetime.now().timestamp()
-                        passiveState = True
+                # Check if a ball was drained
+                ball_drained, num_balls_drained = client.readBallDrain()
+                if ball_drained and num_balls_drained > 0:
 
-                if ball_drain[1] > 0 and datetime.now().timestamp() >= drainTime + ai_config.kickerCooldown and ball_drain[1] > kickCount:
-                    client.activateAutoKick()
-                    kickCount += 1
-                    print("Launching Ball")
-                if passiveState == True and ball_drain[1] == 0 and datetime.now().timestamp() >= roundEndTime + ai_config.roundTimer and gameCount is not ai_config.numRounds:
-                    client.startGame()
-                    kickCount = 0
-                    gameCount += 1
-                    passiveState = False
-                    firstKickTimer = 0
-                    firstKickComplete = False
+                    current_state = State.INACTIVE
+                    print(f"Ball: {num_balls_drained} drained")
+
+                    # No balls left in game
+                    if num_balls_drained >= ai_config.balls_per_game:
+                        games_completed += 1
+                        print(f"End of game {games_completed} out of {games_to_play}.")
+                        time.sleep(3)
+
 
                 if cv2.waitKey(1) == ord('q'):
+                    current_state = State.KILL
                     break
-            #cam.release()
-            cv2.destroyAllWindows()
-            for key,x in execution_times.items():
-                total = 0
-                for y in x:
-                    total += (y[1] - y[0]) / cv2.getTickFrequency()
-                print(f"Total time spent on {key}: {total} over {len(x)} iterations. Average: {total/len(x)}")
-                    
-        finally:
-            client.client.close()
+
+        print("End of all games. Exiting...")
+        #cam.release()
+        cv2.destroyAllWindows()
+                
+    finally:
+        flippers["left"].Deactivate(client)
+        flippers["right"].Deactivate(client)
+        client.client.close()

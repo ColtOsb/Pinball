@@ -40,3 +40,4 @@ class AI:
     numRounds = 3 
     kickerCooldown = 1
     roundTimer = 1
+    balls_per_game = 3
