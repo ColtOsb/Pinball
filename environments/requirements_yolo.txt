@@ -1,0 +1,8 @@
+ultralytics
+matplotlib
+numpy
+opencv-python
+pillow
+pymodbus
+scikit-learn
+scipy
