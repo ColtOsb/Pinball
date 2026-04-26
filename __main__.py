@@ -18,7 +18,7 @@ def Main():
     elif mode == "test-torch":
         device_id = args.get("device_id")
         
-        function_args = {"print_results": True, "output_level": args.get("output-level",0)}
+        function_args = {"print_results": True, "output_level": args.get("output_level",0)}
         if device_id is not None:
             function_args |= {"device_id": device_id}
 
@@ -27,7 +27,17 @@ def Main():
 
     # Perform tests on the plc connection
     elif mode == "test-plc":
-        pass
+        ip_address = args.get("ip_address")
+        port = args.get("port_number")
+        
+        function_args = {"print_results": True, "output_level": args.get("output_level",0)}
+        for item in [("ip_address",ip_address),("port",port)]:
+            name, val = item
+            if val is not None:
+                function_args |= {name: val}
+
+        from testcases.test_plc import PLCTest
+        PLCTest.Test(**function_args)
 
 
 if __name__ == "__main__":

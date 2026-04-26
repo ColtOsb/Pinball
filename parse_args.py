@@ -40,9 +40,22 @@ def SetupParser():
             help="The GPU device to use for inference. This is passed directly to YOLO and eventually pytorch."
             )
 
+    plc_config = argparse.ArgumentParser(add_help=False)
+    plc_config.add_argument(
+            "-i",
+            "--ip-address",
+            help="IP address to use for the PLC connection."
+            )
+    plc_config.add_argument(
+            "-p",
+            "--port-number",
+            help="Port number to use for the PLC connection."
+            )
+
     # ----- Mode arguments -----
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("test-torch", parents=[output_config,torch_config])
+    subparsers.add_parser("test-plc", parents=[output_config,plc_config])
     subparsers.add_parser("run", parents=[output_config,torch_config])
 
 
@@ -62,15 +75,15 @@ def Setup():
         verbose = args.get("verbose",0)
         quiet = args.get("quiet",0)
         output_level = verbose - quiet
-        args |= {"output-level": output_level}
+        args |= {"output_level": output_level}
         args.pop("verbose")
         args.pop("quiet")
 
     # Default output level for modes that do not have the option to specify it.
     else:
-        args |= {"output-level": 0}
+        args |= {"output_level": 0}
 
-    if args["output-level"] > 0:
+    if args["output_level"] > 0:
         print(args)
 
     return args
