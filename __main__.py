@@ -13,7 +13,7 @@ def Main():
     # Run the ai on the game
     elif mode == "run":
         import ai_yolo
-        ai_yolo.Main()
+        ai_yolo.Main(args.get("output_level",0))
 
     # Perform tests on the pytorch environment
     elif mode == "test-torch":

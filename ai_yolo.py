@@ -40,11 +40,22 @@ def Overlapping(box_a, box_b):
     return False
 
 
+def Delay(length, message=""):
+    if length > 0:
+        i = 0
+        if message:
+            print(f"{message}...",end="",flush=True)
+        while i < length:
+            print(".",end="",flush=True)
+            i += 1
+            time.sleep(1)
+        print()
+
 
 # Class labels returned by yolo
 classes = {"ball": 0, "flipper-left": 1, "flipper-right": 2}
 
-def Main():
+def Main(output_level=0):
     client = PLCConnection()
     current_state = State.OUT_OF_PLAY
 
@@ -59,7 +70,7 @@ def Main():
     }
 
     # Use tensorrt model instead of normal pt model
-    model = YOLO("models/best.engine")
+    model = YOLO("models/best.engine", task="detect")
 
     try:
 
@@ -67,7 +78,11 @@ def Main():
         cam = VideoCapture.VideoCapture(0)
 
         # Transformation matrix for perspective transform to apply on each frame
-        perspective = Perspective()
+        if output_level >= 2:
+            print("Transformation matrix:")
+        perspective = Perspective(debug=(output_level >= 2))
+
+        Delay(5,"5 second delay to ensure YOLO is fully loaded")
 
         # Loops through entire games
         while games_completed < games_to_play:
@@ -75,11 +90,13 @@ def Main():
                 break
 
             # Start Game and kick ball
-            print("Starting game")
+            if output_level >= -1:
+                print("Starting game")
             client.startGame()
             current_state = State.INACTIVE
             current_game = games_completed
-            print(f"current game {current_game}. Completed {games_completed}")
+            if output_level >= -1:
+                print(f"current game {current_game}. Completed {games_completed}")
 
             # Gameplay loop involving analyzing each frame
             while current_game == games_completed:
@@ -95,7 +112,7 @@ def Main():
                 frame = perspective.applyPerspectiveTransform(frame)
 
                 # Gets predictions
-                results = model.predict(source=frame, stream=True, conf=0.5, verbose=False)
+                results = model.predict(source=frame, stream=True, conf=0.5, verbose=(output_level>=3))
 
                 # Stores coordinates
                 ball_location = None
@@ -108,7 +125,8 @@ def Main():
                         cls = int(box.cls.cpu())
                         if cls == classes["ball"]:
                             ball_location = box.xyxy[0]
-                            print(ball_location)
+                            if output_level >= 1:
+                                print(f"Ball location: {ball_location}")
                         elif cls == classes["flipper-left"]:
                             flipper_left_location = box.xyxy[0]
                         elif cls == classes["flipper-right"]:
@@ -116,34 +134,43 @@ def Main():
 
                 # Activates flippers as necessary
                 if ball_location is not None:
-                    print(f"Ball: {ball_location}. Left: {flipper_left_location}. Right: {flipper_right_location}")
+                    if output_level >= 2:
+                        print(f"Ball: {ball_location}. Left: {flipper_left_location}. Right: {flipper_right_location}")
                     if flipper_left_location is not None:
                         if(Overlapping(ball_location, flipper_left_location)):
-                            print("FLIP LEFT")
-                            UseFlipperLogic(client,flippers["left"],True)
+                            if output_level >= 1:
+                                print("FLIP LEFT")
+                            UseFlipperLogic(client,flippers["left"],(output_level >= 0))
                     if flipper_right_location is not None:
                         if(Overlapping(ball_location, flipper_right_location)):
-                            print("FLIP RIGHT")
-                            UseFlipperLogic(client,flippers["right"],True)
+                            if output_level >= 1:
+                                print("FLIP RIGHT")
+                            UseFlipperLogic(client,flippers["right"],(output_level >= 0))
 
                 # Deactivates flippers as necessary
                 if flippers["left"].active and datetime.now().timestamp() >= flippers["left"].last_modified+ai_config.flipper_timeout:
                     flippers["left"].Deactivate(client)
+                    if output_level >= 0:
+                        print(flippers["left"])
 
                 if flippers["right"].active and datetime.now().timestamp() >= flippers["right"].last_modified+ai_config.flipper_timeout:
                     flippers["right"].Deactivate(client)
+                    if output_level >= 0:
+                        print(flippers["left"])
 
                 # Check if a ball was drained
                 ball_drained, num_balls_drained = client.readBallDrain()
                 if ball_drained and num_balls_drained > 0:
 
                     current_state = State.INACTIVE
-                    print(f"Ball: {num_balls_drained} drained")
+                    if output_level >= 0:
+                        print(f"Ball: {num_balls_drained} drained")
 
                     # No balls left in game
                     if num_balls_drained >= ai_config.balls_per_game:
                         games_completed += 1
-                        print(f"End of game {games_completed} out of {games_to_play}.")
+                        if output_level >= 0:
+                            print(f"End of game {games_completed} out of {games_to_play}.")
                         time.sleep(3)
 
 
@@ -151,7 +178,8 @@ def Main():
                     current_state = State.KILL
                     break
 
-        print("End of all games. Exiting...")
+        if output_level >= -1:
+            print("End of all games. Exiting...")
         #cam.release()
         cv2.destroyAllWindows()
                 

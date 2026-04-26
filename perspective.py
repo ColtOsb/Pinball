@@ -20,9 +20,10 @@ class Perspective:
         self.destination_points = np.float32([(0,0),(self.width,0),(0,self.height),(self.width,self.height)])
         self.output_size = (self.width,self.height)
         self.matrix = cv2.getPerspectiveTransform(self.source_points,self.destination_points)
-        self.debug = False
         if debug is None:
             self.debug = config.debug
+        else:
+            self.debug = debug
         if self.debug:
             print(f"Width: {self.width}, Height: {self.height}")
             print(f"Source Points: \n{self.source_points}")
