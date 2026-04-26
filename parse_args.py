@@ -55,12 +55,21 @@ def Setup():
 
     # Go through and set them up
     args = vars(args)
-    verbose = args.get("verbose",0)
-    quiet = args.get("quiet",0)
-    output_level = verbose - quiet
-    args |= {"output-level": output_level}
-    args.pop("verbose")
-    args.pop("quiet")
+    mode = args.get("command")
+
+    # Consolidates quiet and verbose for the modes that have them.
+    if mode == "run" or mode == "test-torch" or mode == "test-plc":
+        verbose = args.get("verbose",0)
+        quiet = args.get("quiet",0)
+        output_level = verbose - quiet
+        args |= {"output-level": output_level}
+        args.pop("verbose")
+        args.pop("quiet")
+
+    # Default output level for modes that do not have the option to specify it.
+    else:
+        args |= {"output-level": 0}
+
     if args["output-level"] > 0:
         print(args)
 
