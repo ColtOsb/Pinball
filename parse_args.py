@@ -8,13 +8,15 @@ def SetupParser():
     # ----- Basic arguments -----
 
     parser.add_argument(
+            "-v"
             "--version",
             action="version",
             version="%(prog)s 0.1"
             )
 
     # Output level
-    parser.add_argument(
+    output_config = argparse.ArgumentParser(add_help=False)
+    output_config.add_argument(
             "--verbose",
             "-v",
             action="count",
@@ -22,7 +24,7 @@ def SetupParser():
             help="Increases output by one level. May be used multiple times."
             )
 
-    parser.add_argument(
+    output_config.add_argument(
             "--quiet",
             "-q",
             action="count",
@@ -30,11 +32,19 @@ def SetupParser():
             help="Reduces output by one level. May be used multiple times."
             )
 
-    parser.add_argument(
+    # ----- Configuration arguments -----
+    torch_config = argparse.ArgumentParser(add_help=False)
+    torch_config.add_argument(
             "-d",
             "--device-id",
             help="The GPU device to use for inference. This is passed directly to YOLO and eventually pytorch."
             )
+
+    # ----- Mode arguments -----
+    subparsers = parser.add_subparsers(dest="command")
+    subparsers.add_parser("test-torch", parents=[output_config,torch_config])
+    subparsers.add_parser("run", parents=[output_config,torch_config])
+
 
     return parser
 
