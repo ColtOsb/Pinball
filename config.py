@@ -37,7 +37,7 @@ class AI:
     x_left_maximum = 525
     x_right_minimum = 235
     x_right_maximum = 360
-    numRounds = 3 
+    numRounds = 1
     kickerCooldown = 1
     roundTimer = 1
     balls_per_game = 3
