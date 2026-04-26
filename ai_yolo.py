@@ -1,13 +1,10 @@
 #! /usr/bin/env python3
 import cv2
-import numpy as np
 from control import PLCConnection
 from perspective import Perspective
-from vision import Circles
 from datetime import datetime
 from config import AI as ai_config
 import VideoCapture
-#Centimeter = 5.3 px
 from enum import Enum
 from flipper import Flipper
 import time
@@ -15,6 +12,7 @@ import time
 from ultralytics import YOLO
 
 class State(Enum):
+    # Stores game state for determining what types of action to do
     KILL = 0
     INACTIVE = 1
     OUT_OF_PLAY = 2
@@ -22,6 +20,7 @@ class State(Enum):
 
 
 def UseFlipperLogic(client, flipper: Flipper, enable_output: bool = False):
+    # Determines whether to activate flipper or not.
     if not flipper.active and datetime.now().timestamp() > flipper.last_modified + ai_config.flipper_cooldown:
         flipper.Activate(client)
     if enable_output:
@@ -32,6 +31,7 @@ def Overlapping(box_a, box_b):
     box_a_x1, box_a_y1, box_a_x2, box_a_y2 = box_a.tolist()
     box_b_x1, box_b_y1, box_b_x2, box_b_y2 = box_b.tolist()
 
+    # Determines if any part of box_a is within box_b
     if box_a_y1 < box_b_y2:
         if box_a_x2 > box_b_x1 and box_a_x2 <= box_b_x2:
             return True
@@ -41,12 +41,14 @@ def Overlapping(box_a, box_b):
 
 
 
+# Class labels returned by yolo
 classes = {"ball": 0, "flipper-left": 1, "flipper-right": 2}
 
 def Main():
     client = PLCConnection()
     current_state = State.OUT_OF_PLAY
 
+    # Connects to PLC. Exception is raised if unable to connect
     client.connectToPlc()
 
     games_to_play = ai_config.numRounds
@@ -56,14 +58,22 @@ def Main():
         "right": Flipper(Flipper.sides.RIGHT),
     }
 
+    # Use tensorrt model instead of normal pt model
     model = YOLO("models/best.engine")
 
     try:
+
+        # Connects to webcam device
         cam = VideoCapture.VideoCapture(0)
+
+        # Transformation matrix for perspective transform to apply on each frame
         perspective = Perspective()
+
+        # Loops through entire games
         while games_completed < games_to_play:
             if current_state == State.KILL:
                 break
+
             # Start Game and kick ball
             print("Starting game")
             client.startGame()
@@ -73,18 +83,26 @@ def Main():
 
             # Gameplay loop involving analyzing each frame
             while current_game == games_completed:
+
+                # Kicks the ball
                 if current_state == State.INACTIVE:
                     time.sleep(3)
                     client.activateAutoKick()
                     current_state = State.IN_PLAY
+
+                # Reads frame and performs preprocessing
                 frame = cam.read()
                 frame = perspective.applyPerspectiveTransform(frame)
+
+                # Gets predictions
                 results = model.predict(source=frame, stream=True, conf=0.5, verbose=False)
 
+                # Stores coordinates
                 ball_location = None
                 flipper_left_location = None
                 flipper_right_location = None
 
+                # Extracts coordinates from YOLO predictions
                 for r in results:
                     for box in r.boxes:
                         cls = int(box.cls.cpu())
@@ -96,7 +114,6 @@ def Main():
                         elif cls == classes["flipper-right"]:
                             flipper_right_location = box.xyxy[0]
 
-    
                 # Activates flippers as necessary
                 if ball_location is not None:
                     print(f"Ball: {ball_location}. Left: {flipper_left_location}. Right: {flipper_right_location}")
@@ -109,20 +126,13 @@ def Main():
                             print("FLIP RIGHT")
                             UseFlipperLogic(client,flippers["right"],True)
 
-
                 # Deactivates flippers as necessary
                 if flippers["left"].active and datetime.now().timestamp() >= flippers["left"].last_modified+ai_config.flipper_timeout:
                     flippers["left"].Deactivate(client)
 
                 if flippers["right"].active and datetime.now().timestamp() >= flippers["right"].last_modified+ai_config.flipper_timeout:
                     flippers["right"].Deactivate(client)
-                """
 
-                #cv2.rectangle(frame,(400,28),(525,175),255,3)
-                #cv2.rectangle(frame,(235,28),(360,175),255,3)
-                #cv2.imshow('Machine Vision', gray)
-                
-                """
                 # Check if a ball was drained
                 ball_drained, num_balls_drained = client.readBallDrain()
                 if ball_drained and num_balls_drained > 0:
@@ -148,7 +158,7 @@ def Main():
     finally:
         flippers["left"].Deactivate(client)
         flippers["right"].Deactivate(client)
-        #client.client.close()
+        client.client.close()
 
 if __name__ == "__main__":
     Main()
