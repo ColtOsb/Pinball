@@ -32,9 +32,7 @@ if __name__ == "__main__":
     client = PLCConnection()
     current_state = State.OUT_OF_PLAY
 
-    if not client.connectToPlc():
-        print("ERROR: UNABLE TO ESTABLISH CONNECTION TO PLC.",flush=True)
-        #exit(1)
+    client.connectToPlc()
 
     games_to_play = ai_config.numRounds
     games_completed = 0

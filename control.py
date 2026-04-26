@@ -62,7 +62,7 @@ class PLCConnection:
             return True
         else:
             self.client = None
-            return False
+            raise Exception(f"ERROR: UNABLE TO ESTABLISH CONNECTION TO PLC HOST {self.ip_address}:{self.port_number}")
 
 if __name__ == "__main__":
     def main(win,client):
