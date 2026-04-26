@@ -3,22 +3,31 @@ import parse_args
 def Main():
     args = parse_args.Setup()
     mode = args["command"]
+
+    # Somehow a mode was not specified. Should not be possible
+    # with argparse parsing.
     if not mode:
         print("Invalid mode selected.")
         exit(1)
 
+    # Run the ai on the game
     elif mode == "run":
         pass
 
+    # Perform tests on the pytorch environment
     elif mode == "test-torch":
         device_id = args.get("device_id")
         
-        function_args = {"print_results": True}
+        function_args = {"print_results": True, "output_level": args.get("output-level",0)}
         if device_id is not None:
             function_args |= {"device_id": device_id}
 
-        from environments.test_torch.run import TorchTest
+        from testcases.test_torch import TorchTest
         TorchTest.Test(**function_args)
+
+    # Perform tests on the plc connection
+    elif mode == "test-plc":
+        pass
 
 
 if __name__ == "__main__":
