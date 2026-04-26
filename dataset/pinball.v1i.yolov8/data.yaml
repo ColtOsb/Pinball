@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 3
+names: ['ball', 'flipper-left', 'flipper-right']
+
+roboflow:
+  workspace: lkjlkjlkjs-workspace
+  project: my-first-project-lcfah
+  version: 1
+  license: Private
+  url: https://app.roboflow.com/lkjlkjlkjs-workspace/my-first-project-lcfah/1
