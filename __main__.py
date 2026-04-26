@@ -12,7 +12,8 @@ def Main():
 
     # Run the ai on the game
     elif mode == "run":
-        pass
+        import ai_yolo
+        ai_yolo.Main()
 
     # Perform tests on the pytorch environment
     elif mode == "test-torch":
