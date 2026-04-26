@@ -56,7 +56,7 @@ def Main():
         "right": Flipper(Flipper.sides.RIGHT),
     }
 
-    model = YOLO("test/best.engine")
+    model = YOLO("models/best.engine")
 
     try:
         cam = VideoCapture.VideoCapture(0)
@@ -66,7 +66,7 @@ def Main():
                 break
             # Start Game and kick ball
             print("Starting game")
-            #client.startGame()
+            client.startGame()
             current_state = State.INACTIVE
             current_game = games_completed
             print(f"current game {current_game}. Completed {games_completed}")
@@ -75,17 +75,10 @@ def Main():
             while current_game == games_completed:
                 if current_state == State.INACTIVE:
                     time.sleep(3)
-                    #client.activateAutoKick()
+                    client.activateAutoKick()
                     current_state = State.IN_PLAY
                 frame = cam.read()
                 frame = perspective.applyPerspectiveTransform(frame)
-                #cropped_frame = frame[ai_config.y_minimum:ai_config.y_maximum, ai_config.x_right_minimum: ai_config.x_left_maximum].copy()
-                #gray = Circles.prep(cropped_frame)
-                #img = cv2.cvtColor(gray,cv2.COLOR_GRAY2RGB)
-                #img = cv2.resize(img,(290,135))
-                #img = img.astype('float32')
-                #img = np.expand_dims(img,axis=0)
-                #prediction, label, confidence = predict.prediction(img,model)
                 results = model.predict(source=frame, stream=True, conf=0.5, verbose=False)
 
                 ball_location = None
