@@ -1,4 +1,5 @@
 class Testcase:
+    @staticmethod
     def PrintResults(results, print_output = True):
         if not isinstance(results,list):
             results = [results]
@@ -19,6 +20,7 @@ class Testcase:
 
                 print(output)
             
+    @staticmethod
     def RunTests(tests, print_results, return_results, output_level):
         results = []
 
