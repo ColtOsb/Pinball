@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 3
+names: ['ball', 'flipper-left', 'flipper-right']
+
+roboflow:
+  workspace: coltons-workspace-lvmhi
+  project: coltons-workspace-lvmhi
+  version: dataset
+  license: Private
+  url: https://app.roboflow.com/coltons-workspace-lvmhi/coltons-workspace-lvmhi/dataset
