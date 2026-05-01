@@ -57,7 +57,7 @@ def SetupParser():
     subparsers.add_parser("test-torch", parents=[output_config,torch_config])
     subparsers.add_parser("test-plc", parents=[output_config,plc_config])
     subparsers.add_parser("run", parents=[output_config,torch_config])
-
+    subparsers.add_parser("demo", parents=[output_config,torch_config])
 
     return parser
 
@@ -71,7 +71,7 @@ def Setup():
     mode = args.get("command")
 
     # Consolidates quiet and verbose for the modes that have them.
-    if mode == "run" or mode == "test-torch" or mode == "test-plc":
+    if mode == "run" or mode =="demo" or mode == "test-torch" or mode == "test-plc":
         verbose = args.get("verbose",0)
         quiet = args.get("quiet",0)
         output_level = verbose - quiet

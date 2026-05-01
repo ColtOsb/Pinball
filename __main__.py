@@ -11,9 +11,9 @@ def Main():
         exit(1)
 
     # Run the ai on the game
-    elif mode == "run":
+    elif mode == "run" or mode == "demo":
         import ai_yolo
-        ai_yolo.Main(args.get("output_level",0))
+        ai_yolo.Main(args.get("output_level",0),mode=="demo")
 
     # Perform tests on the pytorch environment
     elif mode == "test-torch":
