@@ -1,8 +1,4 @@
-import curses
-import os
-import time
 from pymodbus.client import ModbusTcpClient
-from enum import Enum
 # Address 11 is left flipper read, 12 is right flipper read
 # Address 13 is left flipper write, 14 is right flipper write
 # Address 3 is autokicker
@@ -11,34 +7,48 @@ from enum import Enum
 
 class PLCConnection:
 
-    output_registers = Enum(
-            "output_registers",
-            [
-                ("FLIPPER_LEFT",13),
-                ("FLIPPER_RIGHT",14)
-            ]
-        )
+    input_registers = {
+        "BALL_DRAIN": 6,
+        "GAME_ACTIVE": 4,
+    }
+
+    output_registers = {
+        "AUTOKICK": 3,
+        "FLIPPER_LEFT": 13,
+        "FLIPPER_RIGHT": 14,
+        "START_GAME": 15,
+    }
         
-    def __init__(self,ip_address="192.168.1.10",port_number=502):
+    def __init__(self,ip_address="192.168.1.10", port_number=502, connect=False):
         self.ip_address = ip_address
         self.port_number = port_number
         self.ballDrain = None
-    def activateAutoKick(self):
-        self.client.write_coil(3,[True])
+        if connect:
+            self.ConnectToPLC
 
-    def activateLeft(self):
-        self.client.write_coil(13,[True])
 
-    def activateRight(self):
-        self.client.write_coil(14,True)
+    def ActivateAutoKick(self):
+        self.client.write_coil(PLCConnection.output_registers["AUTOKICK"],[True])
 
-    def deactivateLeft(self):
-        self.client.write_coil(13,False)
 
-    def deactivateRight(self):
-        self.client.write_coil(14,False)
-    def readBallDrain(self):
-        ballDrain = self.client.read_input_registers(address=6,count=1)
+    def ActivateLeft(self):
+        self.client.write_coil(PLCConnection.output_registers["FLIPPER_LEFT"],[True])
+
+
+    def ActivateRight(self):
+        self.client.write_coil(PLCConnection.output_registers["FLIPPER_RIGHT"],[True])
+
+
+    def DeactivateLeft(self):
+        self.client.write_coil(PLCConnection.output_registers["FLIPPER_LEFT"],[False])
+
+
+    def DeactivateRight(self):
+        self.client.write_coil(PLCConnection.output_registers["FLIPPER_RIGHT"],[False])
+
+
+    def ReadBallDrain(self):
+        ballDrain = self.client.read_input_registers(address=PLCConnection.input_registers["BALL_DRAIN"],count=1)
         if self.ballDrain is None:
             self.ballDrain = ballDrain.registers[0]
             
@@ -48,23 +58,31 @@ class PLCConnection:
             self.ballDrain = ballDrain.registers[0]
             return (True,self.ballDrain)
 
-    def startGame(self):
-        #print("Starting game on: ",15)
-        self.client.write_coil(15,True)
+
+    def StartGame(self):
+        self.client.write_coil(PLCConnection.output_registers["START_GAME"],True)
+
 
     def GameActive(self):
-        start = self.client.read_coils(address=4,count=1)
+        start = self.client.read_coils(address=PLCConnection.input_registers["GAME_ACTIVE"],count=1)
         return start.bits[0]
 
-    def connectToPlc(self):
+
+    def ConnectToPLC(self):
         self.client = ModbusTcpClient(self.ip_address,port=self.port_number)
-        if self.client.connect():
-            return True
-        else:
+        if not self.client.connect():
             self.client = None
             raise Exception(f"ERROR: UNABLE TO ESTABLISH CONNECTION TO PLC HOST {self.ip_address}:{self.port_number}")
 
+
+    def Disconnect(self):
+        if self.client:
+            self.client.close()
+
+
 if __name__ == "__main__":
+    import curses
+    import os
     def main(win,client):
         key = ""
         leftActive = False
@@ -79,25 +97,25 @@ if __name__ == "__main__":
                     client.startGame()
                 if(key == "KEY_LEFT" or key == "a"):
                     if not leftActive:
-                        client.activateLeft()
+                        client.ActivateLeft()
                         leftActive = True
                     else:
-                        client.deactivateLeft()
+                        client.DeactivateLeft()
                         leftActive = False
                 elif(key == "KEY_RIGHT" or key == "d"):
                     if not rightActive:
-                        client.activateRight()
+                        client.ActivateRight()
                         rightActive = True
                     else:
-                        client.deactivateRight()
+                        client.DeactivateRight()
                         rightActive = False
                 elif(key == "KEY_UP"):
-                    client.deactivateLeft()
+                    client.DeactivateLeft()
                     leftActive = False
                     rightActive = False
-                    client.deactivateRight()
+                    client.DeactivateRight()
                 elif(key == " "):
-                    client.activateAutoKick()
+                    client.ActivateAutoKick()
                 elif(key == "q" or key == os.linesep):
                     break
             except:
@@ -107,4 +125,4 @@ if __name__ == "__main__":
         try:
             curses.wrapper(main,client)
         finally:
-            client.client.close()
+            client.Disconnect()

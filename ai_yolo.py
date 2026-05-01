@@ -104,7 +104,7 @@ def Main(output_level=0):
                 # Kicks the ball
                 if current_state == State.INACTIVE:
                     time.sleep(3)
-                    client.activateAutoKick()
+                    client.ActivateAutoKick()
                     current_state = State.IN_PLAY
 
                 # Reads frame and performs preprocessing
@@ -186,7 +186,7 @@ def Main(output_level=0):
     finally:
         flippers["left"].Deactivate(client)
         flippers["right"].Deactivate(client)
-        client.client.close()
+        client.Disconnect()
 
 if __name__ == "__main__":
     Main()

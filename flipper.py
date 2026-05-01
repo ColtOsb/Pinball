@@ -15,9 +15,9 @@ class Flipper:
 
         # Determines which flipper to activate
         if self.side == Flipper.sides.LEFT:
-            plc_client.activateLeft()
+            plc_client.ActivateLeft()
         elif self.side == Flipper.sides.RIGHT:
-            plc_client.activateRight()
+            plc_client.ActivateRight()
 
         # Invalid side set
         else:
@@ -36,11 +36,11 @@ class Flipper:
 
         # Determines which flipper to activate
         if self.side == Flipper.sides.LEFT:
-            plc_client.deactivateLeft()
+            plc_client.DeactivateLeft()
         elif self.side == Flipper.sides.RIGHT:
-            plc_client.deactivateRight()
+            plc_client.DeactivateRight()
 
-        # Invalide side set
+        # Invalid side set
         else:
             return 2
 
