@@ -18,6 +18,18 @@ class State(Enum):
     OUT_OF_PLAY = 2
     IN_PLAY = 3
 
+class ManualBox():
+    def __init__(self,x1,y1,x2,y2):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+        
+    def __list__(self):
+        return [x1,y1,x2,y2]
+        
+    def tolist(self):
+        return list(self)
 
 def UseFlipperLogic(client, flipper: Flipper, enable_output: bool = False):
     # Determines whether to activate flipper or not.
@@ -55,7 +67,7 @@ def Delay(length, message=""):
 # Class labels returned by yolo
 classes = {"ball": 0, "flipper-left": 1, "flipper-right": 2}
 
-def Main(output_level=0):
+def Main(output_level=0,use_hardcoded_flippers=False):
     client = PLCConnection()
     current_state = State.OUT_OF_PLAY
 
@@ -128,9 +140,15 @@ def Main(output_level=0):
                             if output_level >= 1:
                                 print(f"Ball location: {ball_location}")
                         elif cls == classes["flipper-left"]:
-                            flipper_left_location = box.xyxy[0]
+                            if use_hardcoded_flippers:
+                                flipper_left_location = ManualBox(1,2,3,4)
+                            else:
+                                flipper_left_location = box.xyxy[0]
                         elif cls == classes["flipper-right"]:
-                            flipper_right_location = box.xyxy[0]
+                            if use_hardcoded_flippers:
+                                flipper_left_location = ManualBox(1,2,3,4)
+                            else:
+                                flipper_right_location = box.xyxy[0]
 
                 # Activates flippers as necessary
                 if ball_location is not None:
